@@ -1,5 +1,12 @@
 import React, { Component } from 'react';
-import { StyleSheet, View, ActivityIndicator, Dimensions } from 'react-native';
+import _ from 'lodash';
+import {
+  StyleSheet,
+  View,
+  ActivityIndicator,
+  Dimensions,
+  Image,
+} from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
 const { width, height } = Dimensions.get('window');
@@ -8,15 +15,15 @@ const ASPECT_RATIO = width / height;
 const LATITUDE_DELTA = 0.0922;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
-const query = 'burger';
+const query = 'food';
 const latitude = 37.773972;
 const longitude = -122.431297;
 
 const params = {
-  v: '20161016',
+  v: '20190501',
   ll: [latitude, longitude].join(','),
   query,
-  limit: 50,
+  limit: 100,
   intent: 'checkin',
   client_id: 'BCUJZ2MSKUWJC2Q5HVIYZLHRWGFJ2OFPKPLBP1NOBNR3VW5R',
   client_secret: 'Q10HUP5APBQOYNTPABSH4CSKRGEAI2CXIYULYGG0EZYUUWUZ',
@@ -27,6 +34,10 @@ const queryString = Object.keys(params)
   .join('&');
 
 export default class FoursquareMap extends Component {
+  static navigationOptions = {
+    title: 'Home',
+    header: null,
+  };
   constructor(props) {
     super(props);
     this.state = { isLoading: true };
@@ -51,11 +62,14 @@ export default class FoursquareMap extends Component {
   render() {
     if (this.state.isLoading) {
       return (
-        <View style={{ flex: 1, padding: 20 }}>
-          <ActivityIndicator />
+        <View
+          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+        >
+          <ActivityIndicator size='large' color='#0000ff' />
         </View>
       );
     }
+    console.log(this.state.dataSource);
     return (
       <View style={styles.container}>
         <MapView
@@ -71,6 +85,8 @@ export default class FoursquareMap extends Component {
           }}
         >
           {this.state.dataSource.map(v => {
+            const icon = _.join(_.values(v.categories[0].icon), '32');
+            console.log(icon);
             return (
               <Marker
                 key={v.id}
@@ -86,8 +102,14 @@ export default class FoursquareMap extends Component {
                 }}
                 title={v.name}
                 description={v.location.address}
-                image='https://sirius.searates.com/images/marker-yel.png'
-              />
+              >
+                <View style={styles.marker}>
+                  <Image
+                    style={{ width: 24, height: 24 }}
+                    source={{ uri: icon }}
+                  />
+                </View>
+              </Marker>
             );
           })}
         </MapView>
@@ -106,7 +128,5 @@ const styles = StyleSheet.create({
   marker: {
     backgroundColor: 'red',
     borderRadius: 999,
-    width: 16,
-    height: 16,
   },
 });
