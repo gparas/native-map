@@ -3,9 +3,10 @@ import _ from 'lodash';
 import {
   StyleSheet,
   View,
+  Text,
   ActivityIndicator,
   Dimensions,
-  Image,
+  TouchableOpacity,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
@@ -16,15 +17,13 @@ const LATITUDE_DELTA = 0.0922;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 const query = 'food';
-const latitude = 37.773972;
-const longitude = -122.431297;
 
 const params = {
   v: '20190501',
-  ll: [latitude, longitude].join(','),
-  query,
-  limit: 100,
-  intent: 'checkin',
+  near: 'athens',
+  categoryId: '4bf58dd8d48988d10e941735',
+  // limit: 100,
+  // intent: 'global',
   client_id: 'BCUJZ2MSKUWJC2Q5HVIYZLHRWGFJ2OFPKPLBP1NOBNR3VW5R',
   client_secret: 'Q10HUP5APBQOYNTPABSH4CSKRGEAI2CXIYULYGG0EZYUUWUZ',
 };
@@ -50,7 +49,7 @@ export default class FoursquareMap extends Component {
         this.setState(
           {
             isLoading: false,
-            dataSource: data.response.venues,
+            dataSource: data.response,
           },
           function() {}
         );
@@ -59,6 +58,12 @@ export default class FoursquareMap extends Component {
         console.error(error);
       });
   }
+
+  fitToMarkersToMap() {
+    const { dataSource } = this.state;
+    this.map.fitToSuppliedMarkers(dataSource.venues.map(v => v.id), true);
+  }
+
   render() {
     if (this.state.isLoading) {
       return (
@@ -70,26 +75,26 @@ export default class FoursquareMap extends Component {
       );
     }
     console.log(this.state.dataSource);
+    const { dataSource } = this.state;
     return (
       <View style={styles.container}>
         <MapView
-          initialRegion={{
-            latitude: latitude,
-            longitude: longitude,
-            latitudeDelta: LATITUDE_DELTA,
-            longitudeDelta: LONGITUDE_DELTA,
-          }}
           style={styles.map}
           ref={ref => {
             this.map = ref;
           }}
+          initialRegion={{
+            latitude: dataSource.geocode.feature.geometry.center.lat,
+            longitude: dataSource.geocode.feature.geometry.center.lng,
+            latitudeDelta: LATITUDE_DELTA,
+            longitudeDelta: LONGITUDE_DELTA,
+          }}
         >
-          {this.state.dataSource.map(v => {
-            const icon = _.join(_.values(v.categories[0].icon), '32');
-            console.log(icon);
+          {dataSource.venues.map(v => {
             return (
               <Marker
                 key={v.id}
+                identifier={v.id}
                 coordinate={{
                   latitude: v.location.lat,
                   longitude: v.location.lng,
@@ -102,17 +107,15 @@ export default class FoursquareMap extends Component {
                 }}
                 title={v.name}
                 description={v.location.address}
-              >
-                <View style={styles.marker}>
-                  <Image
-                    style={{ width: 24, height: 24 }}
-                    source={{ uri: icon }}
-                  />
-                </View>
-              </Marker>
+              />
             );
           })}
         </MapView>
+        <View style={{ marginVertical: 20 }}>
+          <TouchableOpacity onPress={() => this.fitToMarkersToMap()}>
+            <Text>Fit Markers Onto Map</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -121,6 +124,8 @@ export default class FoursquareMap extends Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
   },
   map: {
     ...StyleSheet.absoluteFillObject,
